@@ -1,2 +1,4 @@
 node_modules
 protected.env
+.env
+data/

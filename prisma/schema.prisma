@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int                 @id @default(autoincrement())
+  user_name          String
+  user_email         String              @unique
+  user_password      String
+  activitiesCompleted Int?
+  createdOn          DateTime
+  therapySessions    TherapySession[]    @relation("UserSessions")
+  chatbotInteractions ChatbotInteraction[]
+  supportGroups      SupportGroup[]      @relation("UserGroups")
+  chatGroups         ChatGroup[]         @relation("UserChats")
+  chatMessages       ChatMessage[]
+}
+
+model Therapist {
+  id                 Int                 @id @default(autoincrement())
+  therapistName      String
+  firstName          String
+  secondName         String?
+  therapistEmail     String              @unique
+  password           String
+  specialization     String
+  createdOn          DateTime
+  updatedOn          DateTime
+  therapySessions    TherapySession[]
+  therapistSlots TherapistAvailable[]
+}
+
+model TherapistAvailable {
+  therapistId Int
+  slot_start DateTime
+  slot_end DateTime
+  therapist Therapist @relation(fields: [therapistId], references: [id])
+  @@id([therapistId, slot_start, slot_end])
+}
+
+model TherapySession {
+  id                 Int                 @id @default(autoincrement())
+  date               DateTime
+  time               DateTime
+  status             String
+  feedback           String?
+  userId             Int
+  therapistId        Int
+  user               User                @relation("UserSessions", fields: [userId], references: [id])
+  therapist          Therapist           @relation(fields: [therapistId], references: [id])
+}
+
+model ChatbotInteraction {
+  id                 Int                 @id @default(autoincrement())
+  date               DateTime
+  query              String
+  response           String
+  activitySuggestions String?
+  userId             Int
+  user               User                @relation(fields: [userId], references: [id])
+}
+
+model SupportGroup {
+  id                 Int                 @id @default(autoincrement())
+  groupName          String
+  users              User[]              @relation("UserGroups")
+  moderatorId        Int
+  moderator          Moderator           @relation(fields: [moderatorId], references: [id])
+  chatGroup          ChatGroup?
+}
+
+model ChatGroup {
+  id                 Int                 @id @default(autoincrement())
+  users              User[]              @relation("UserChats")
+  supportGroupId     Int                 @unique
+  supportGroup       SupportGroup        @relation(fields: [supportGroupId], references: [id])
+}
+
+model ChatMessage {
+  id                 Int                 @id @default(autoincrement())
+  userId             Int
+  user               User                @relation(fields: [userId], references: [id])
+  content            String
+  sentAt             DateTime
+}
+
+model Moderator {
+  id                 Int                 @id @default(autoincrement())
+  modEmail           String              @unique
+  modName            String
+  modPassword        String
+  supportGroups      SupportGroup[]
+}
